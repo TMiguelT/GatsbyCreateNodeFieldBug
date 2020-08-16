@@ -1,6 +1,6 @@
-const assert = require("assert");
+const assert = require("assert")
 
-exports.sourceNodes = async ({ actions, createNodeId, createContentDigest }) => {
+exports.sourceNodes = async ({ actions, getNode }) => {
   const { createNode } = actions
 
   await createNode({
@@ -10,10 +10,16 @@ exports.sourceNodes = async ({ actions, createNodeId, createContentDigest }) => 
       type: "MyNode",
       contentDigest: "abcd"
     }
-  });
+  })
+
+  // At this point, looking up the node in the database will return the value of "firstField"
+  const fullNode = getNode("abcd");
+  assert("firstField" in fullNode)
+  assert(fullNode.firstField === "123")
 }
 
-exports.createPages = async ({ actions: {createNodeField}, graphql ,     getNode }) => {
+exports.createPages = async ({ actions: { createNodeField }, graphql, getNode }) => {
+  // This is a fairly typical query where we want certain fields but not others
   const result = await graphql(`
     {
       allMyNode {
@@ -25,20 +31,19 @@ exports.createPages = async ({ actions: {createNodeField}, graphql ,     getNode
         }
       }
     }
-  `);
-  
-  const node = result.data.allMyNode.nodes[0];
-  
+  `)
+  const node = result.data.allMyNode.nodes[0]
+
   createNodeField({
     node: node,
     name: "secondField",
     value: "456"
-  });
+  })
 
-  const fullNode = getNode(node.id);
+  const fullNode = getNode(node.id)
 
-
-  assert('secondField' in fullNode.fields);
-  assert('firstField' in fullNode);
-  assert(fullNode.firstField === '123');
-};
+  // But this time if we run the same assertion, it will fail
+  assert("secondField" in fullNode.fields)
+  assert("firstField" in fullNode)
+  assert(fullNode.firstField === "123")
+}
