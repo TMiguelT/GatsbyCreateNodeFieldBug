@@ -1,7 +1,44 @@
-/**
- * Implement Gatsby's Node APIs in this file.
- *
- * See: https://www.gatsbyjs.org/docs/node-apis/
- */
+const assert = require("assert");
 
-// You can delete this file if you're not using it
+exports.sourceNodes = async ({ actions, createNodeId, createContentDigest }) => {
+  const { createNode } = actions
+
+  await createNode({
+    id: "abcd",
+    firstField: "123",
+    internal: {
+      type: "MyNode",
+      contentDigest: "abcd"
+    }
+  });
+}
+
+exports.createPages = async ({ actions: {createNodeField}, graphql ,     getNode }) => {
+  const result = await graphql(`
+    {
+      allMyNode {
+        nodes {
+          id
+          internal {
+            fieldOwners
+          }
+        }
+      }
+    }
+  `);
+  
+  const node = result.data.allMyNode.nodes[0];
+  
+  createNodeField({
+    node: node,
+    name: "secondField",
+    value: "456"
+  });
+
+  const fullNode = getNode(node.id);
+
+
+  assert('secondField' in fullNode.fields);
+  assert('firstField' in fullNode);
+  assert(fullNode.firstField === '123');
+};
